@@ -1,0 +1,64 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION = 'us-east-1'
+        AWS_ACCOUNT_ID = '305601180466'
+        ECR_REPO = '305601180466.dkr.ecr.us-east-1.amazonaws.com/app-repository'
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        CLUSTER_NAME = 'eks-cluster'
+        HELM_RELEASE = 'hello-app'
+        HELM_CHART = 'helm/hello-app'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    docker build -t $ECR_REPO:$IMAGE_TAG ./app
+                    docker tag $ECR_REPO:$IMAGE_TAG $ECR_REPO:latest
+                '''
+            }
+        }
+
+        stage('Login to ECR') {
+            steps {
+                sh '''
+                    aws ecr get-login-password --region $AWS_REGION | \
+                    docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+                '''
+            }
+        }
+
+        stage('Push Image to ECR') {
+            steps {
+                sh '''
+                    docker push $ECR_REPO:$IMAGE_TAG
+                    docker push $ECR_REPO:latest
+                '''
+            }
+        }
+
+        stage('Deploy to EKS with Helm') {
+            steps {
+                sh '''
+                    aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+
+                    helm upgrade --install $HELM_RELEASE $HELM_CHART \
+                      --set image.repository=$ECR_REPO \
+                      --set image.tag=$IMAGE_TAG
+
+                    kubectl rollout status deployment/hello-app
+                    kubectl get pods
+                    kubectl get svc hello-app
+                '''
+            }
+        }
+    }
+}
