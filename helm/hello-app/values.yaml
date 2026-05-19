@@ -202,7 +202,7 @@ readinessProbe:
   initialDelaySeconds: 5
   periodSeconds: 10
 
-autoscaling:
+# autoscaling:
   enabled: false
 
 nodeSelector: {}
@@ -210,3 +210,10 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 50
+  targetMemoryUtilizationPercentage: 50
