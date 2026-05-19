@@ -4,11 +4,9 @@ pipeline {
     environment {
         AWS_REGION = 'us-east-1'
         AWS_ACCOUNT_ID = '305601180466'
-        ECR_REPO = '305601180466.dkr.ecr.us-east-1.amazonaws.com/app-repository'
-        IMAGE_TAG = "${env.BUILD_NUMBER}"
-        CLUSTER_NAME = 'eks-cluster'
-        HELM_RELEASE = 'hello-app'
-        HELM_CHART = 'helm/hello-app'
+        ECR_REPO = 'app-repository'
+        IMAGE_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}"
+        EKS_CLUSTER = 'eks-cluster'
     }
 
     stages {
@@ -21,8 +19,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh '''
-                    docker build -t $ECR_REPO:$IMAGE_TAG ./app
-                    docker tag $ECR_REPO:$IMAGE_TAG $ECR_REPO:latest
+                docker build -t $IMAGE_REPO:$BUILD_NUMBER ./app
+                docker tag $IMAGE_REPO:$BUILD_NUMBER $IMAGE_REPO:latest
                 '''
             }
         }
@@ -30,8 +28,8 @@ pipeline {
         stage('Login to ECR') {
             steps {
                 sh '''
-                    aws ecr get-login-password --region $AWS_REGION | \
-                    docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+                aws ecr get-login-password --region $AWS_REGION \
+                | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
                 '''
             }
         }
@@ -39,22 +37,25 @@ pipeline {
         stage('Push Image to ECR') {
             steps {
                 sh '''
-                    docker push $ECR_REPO:$IMAGE_TAG
-                    docker push $ECR_REPO:latest
+                docker push $IMAGE_REPO:$BUILD_NUMBER
+                docker push $IMAGE_REPO:latest
                 '''
             }
         }
 
         stage('Deploy to EKS with Helm') {
-    steps {
-        sh '''
-        aws eks update-kubeconfig --region us-east-1 --name eks-cluster
+            steps {
+                sh '''
+                aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER
 
-        kubectl delete svc hello-app --ignore-not-found=true
+                kubectl delete svc hello-app --ignore-not-found=true
 
-        helm upgrade --install hello-app helm/hello-app \
-          --set image.repository=305601180466.dkr.ecr.us-east-1.amazonaws.com/app-repository \
-          --set image.tag=${BUILD_NUMBER}
-        '''
+                helm upgrade --install hello-app helm/hello-app \
+                  --set image.repository=$IMAGE_REPO \
+                  --set image.tag=$BUILD_NUMBER
+                '''
+            }
+        }
     }
 }
+
