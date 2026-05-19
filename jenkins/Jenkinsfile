@@ -46,19 +46,15 @@ pipeline {
         }
 
         stage('Deploy to EKS with Helm') {
-            steps {
-                sh '''
-                    aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+    steps {
+        sh '''
+        aws eks update-kubeconfig --region us-east-1 --name eks-cluster
 
-                    helm upgrade --install $HELM_RELEASE $HELM_CHART \
-                      --set image.repository=$ECR_REPO \
-                      --set image.tag=$IMAGE_TAG
+        kubectl delete svc hello-app --ignore-not-found=true
 
-                    kubectl rollout status deployment/hello-app
-                    kubectl get pods
-                    kubectl get svc hello-app
-                '''
-            }
-        }
+        helm upgrade --install hello-app helm/hello-app \
+          --set image.repository=305601180466.dkr.ecr.us-east-1.amazonaws.com/app-repository \
+          --set image.tag=${BUILD_NUMBER}
+        '''
     }
 }
