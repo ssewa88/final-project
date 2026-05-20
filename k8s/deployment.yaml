@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hello-app
+  labels:
+    app: hello-app
 spec:
   replicas: 1
   selector:
@@ -12,15 +14,21 @@ spec:
       labels:
         app: hello-app
     spec:
-            containers:
-      - name: hello-app
-        image: 305601180466.dkr.ecr.us-east-1.amazonaws.com/app-repository:latest
-        ports:
-        - containerPort: 3000
-        resources:
-          requests:
-            cpu: "100m"
-            memory: "128Mi"
-          limits:
-            cpu: "250m"
-            memory: "256Mi"
+      containers:
+        - name: hello-app
+          image: 305601180466.dkr.ecr.us-east-1.amazonaws.com/app-repository:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10

@@ -98,7 +98,7 @@ resource "aws_security_group" "alb" {
 # Launch Template for EKS nodes
 resource "aws_launch_template" "eks_nodes" {
   name_prefix   = "eks-node-template-"
-  image_id      = "ami-03bc317f1e0c7d6c1"  # Amazon EKS-optimized AMI for 1.31 in us-east-1
+  image_id      = "ami-03bc317f1e0c7d6c1" # Amazon EKS-optimized AMI for 1.31 in us-east-1
   instance_type = "t3.small"
 
   block_device_mappings {
@@ -167,8 +167,8 @@ resource "aws_eks_node_group" "main" {
   }
 
   # Use CUSTOM AMI type since we're specifying an AMI in the launch template
-  ami_type       = "CUSTOM"
-  capacity_type  = "ON_DEMAND"
+  ami_type      = "CUSTOM"
+  capacity_type = "ON_DEMAND"
 
   # Use launch template
   launch_template {
@@ -188,7 +188,7 @@ resource "aws_eks_node_group" "main" {
   ]
 
   tags = {
-    "k8s.io/cluster-autoscaler/enabled" = "true"
+    "k8s.io/cluster-autoscaler/enabled"                      = "true"
     "k8s.io/cluster-autoscaler/${aws_eks_cluster.main.name}" = "owned"
   }
 

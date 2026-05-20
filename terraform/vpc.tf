@@ -17,7 +17,7 @@ resource "aws_subnet" "public" {
   availability_zone = data.aws_availability_zones.available.names[count.index]
 
   tags = {
-    Name = "public-subnet-${count.index + 1}"
+    Name                     = "public-subnet-${count.index + 1}"
     "kubernetes.io/role/elb" = "1"
   }
 }
@@ -30,7 +30,7 @@ resource "aws_subnet" "private" {
   availability_zone = data.aws_availability_zones.available.names[count.index]
 
   tags = {
-    Name = "private-subnet-${count.index + 1}"
+    Name                              = "private-subnet-${count.index + 1}"
     "kubernetes.io/role/internal-elb" = "1"
   }
 }
